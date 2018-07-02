@@ -13,7 +13,7 @@ use Entities\{
     PhysicalInterface   as PhysicalInterfaceEntity
 };
 
-class VirtualInterfaceControllerTest extends DuskTestCase
+class Layer2AddressControllerTest extends DuskTestCase
 {
     /**
      * Test the whole Interfaces functionalities (virtuel, physical, vlan)
@@ -24,6 +24,7 @@ class VirtualInterfaceControllerTest extends DuskTestCase
      */
     public function testAddL2a()
     {
+        shell_exec('bzcat data/travis-ci/travis_ci_test_db.sql.bz2| mysql -u root ixp_ci');
         $this->browse( function ( Browser $browser ) {
 
             $browser->resize(1600, 1200)
@@ -33,6 +34,8 @@ class VirtualInterfaceControllerTest extends DuskTestCase
                 ->press('submit')
                 ->assertPathIs('/admin');
 
+            $browser->visit('/layer2-address/vlan-interface/5')
+                ->assertSee('Configured MAC Address Management');
 
         });
 
