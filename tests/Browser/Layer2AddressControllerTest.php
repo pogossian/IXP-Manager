@@ -8,9 +8,8 @@ use Tests\DuskTestCase;
 use Laravel\Dusk\Browser;
 
 use Entities\{
-    VirtualInterface    as VirtualInterfaceEntity,
     VlanInterface       as VlanInterfaceEntity,
-    PhysicalInterface   as PhysicalInterfaceEntity
+    Layer2Address       as Layer2AddressEntity
 };
 
 class Layer2AddressControllerTest extends DuskTestCase
@@ -24,7 +23,9 @@ class Layer2AddressControllerTest extends DuskTestCase
      */
     public function testAddL2a()
     {
+
         shell_exec('bzcat data/travis-ci/travis_ci_test_db.sql.bz2| mysql -u root ixp_ci');
+
         $this->browse( function ( Browser $browser ) {
 
             $browser->resize(1600, 1200)
@@ -34,229 +35,220 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->press('submit')
                 ->assertPathIs('/admin');
 
+            // check that the vlan interface has no layer2address
+            $browser->visit('/interfaces/virtual/edit/5')
+                ->assertSee( "(none)" );
+
+            // check DB
+            /** @var VlanInterfaceEntity $vli */
+            $this->assertInstanceOf(VlanInterfaceEntity::class, $vli = D2EM::getRepository(VlanInterfaceEntity::class)->find( 5 ) );
+
+            // check that we have 0 layer2address for the vlan interface
+            $this->assertEquals( 0, count( $vli->getLayer2Addresses() ) );
+
+            // add mac address with wrong value
+            $browser->visit('/layer2-address/vlan-interface/5')
+                ->assertSee('Configured MAC Address Management')
+                ->click( "#add-l2a" )
+                ->waitForText( "Enter a MAC Address." )
+                ->type( ".bootbox-input-text" , "bad-mac-address")
+                ->press( "OK")
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "Configured MAC Address Management" )
+                ->assertSee( "Invalid or missing MAC addresses" );
+
+            // add mac address
+            $browser->click( "#add-l2a" )
+                ->waitForText( "Enter a MAC Address." )
+                ->type( ".bootbox-input-text" , "e48d8c3521e5")
+                ->press( "OK")
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "Configured MAC Address Management" )
+                ->assertSee( "The MAC address has been added successfully." );
+
+
+            // check DB
+            D2EM::refresh( $vli );
+
+            // check that we have 1 layer2address for the vlan interface
+            $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
+
+            /** @var Layer2AddressEntity $l2a */
+            $l2a = $vli->getLayer2Addresses()->first();
+
+            $this->assertEquals("5", $l2a->getVlanInterface()->getId() );
+            $this->assertEquals("e48d8c3521e5", $l2a->getMac() );
+
+
+            // add same mac address as above
+            $browser->click( "#add-l2a" )
+                ->waitForText( "Enter a MAC Address." )
+                ->type( ".bootbox-input-text" , "e48d8c3521e5")
+                ->press( "OK")
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "Configured MAC Address Management" )
+                ->assertSee( "The MAC address already exists within this" );
+
+            // check that the vlan interface has the new layer2address
+            $browser->visit('/interfaces/virtual/edit/5')
+                ->assertSee( "e4:8d:8c:35:21:e5" );
+
+
+            // go the the layer2address list
             $browser->visit('/layer2-address/vlan-interface/5')
                 ->assertSee('Configured MAC Address Management');
+
+
+            // check the mac address view popup
+            $browser->element('.glyphicon-eye-open')->click();
+            $browser->waitForText( "MAC Address" )
+                ->assertInputValue( "#mac", "e48d8c3521e5" )
+                ->press( "Close")
+                ->waitForText( "Configured MAC Address Management" )
+                ->waitForText( "e4:8d:8c:35:21:e5" );
+
+
+
+            // add a second mac address
+            $browser->click( "#add-l2a" )
+                ->waitForText( "Enter a MAC Address." )
+                ->type( ".bootbox-input-text" , "e48d8c3521e4")
+                ->press( "OK")
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "Configured MAC Address Management" )
+                ->assertSee( "The MAC address has been added successfully." );
+
+
+            // check DB
+            D2EM::refresh( $vli );
+
+            // check that we have 2 layer2address for the vlan interface
+            $this->assertEquals( 2, count( $vli->getLayer2Addresses() ) );
+
+            /** @var Layer2AddressEntity $l2a */
+            $l2a = $vli->getLayer2Addresses()->last();
+
+            $this->assertEquals("5", $l2a->getVlanInterface()->getId() );
+            $this->assertEquals("e48d8c3521e4", $l2a->getMac() );
+
+            // check that the vlan interface has the new layer2address
+            $browser->visit('/interfaces/virtual/edit/5')
+                ->assertSee( "(multiple)" );
+
+
+            // go the the layer2address list
+            $browser->visit('/layer2-address/vlan-interface/5')
+                ->assertSee('Configured MAC Address Management');
+
+
+            foreach( $vli->getLayer2Addresses() as $l2a ){
+
+                $l2aMac = $l2a->getMac();
+
+                // delete mac addresses
+                $browser->press('#delete-l2a-' . $l2a->getId() )
+                    ->waitForText( 'Do you really want to delete this MAC Address?' )
+                    ->press('Delete')
+                    ->waitUntilMissing( ".bootbox-prompt" )
+                    ->waitForText( "Configured MAC Address Management" );
+
+                $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => $l2aMac ] ) );
+
+            }
+
+            D2EM::refresh($vli);
+
+            // check that we have 0 layer2address for the vlan interface
+            $this->assertEquals( 0, count( $vli->getLayer2Addresses() ) );
+
+            // check to add mac address as a USER (customer HEAnet)
+            $browser->visit('/customer/overview/2/users')
+                ->assertSee( "HEAnet" );
+
+
+
+
+
+            // login as a USER (hecustuser)
+            $browser->click( "#btn-login-as-4" )
+                ->assertSee( "You are now logged in as hecustuser of HEAnet." );
+
+            // visit layer2address list
+            $browser->visit('/layer2-address/vlan-interface/2')
+                ->assertSee( "MAC Address Management" );
+
+            // add a mac address
+            $browser->click( "#add-l2a" )
+                ->waitForText( "Enter a MAC Address." )
+                ->type( ".bootbox-input-text" , "e48d8c3521e1")
+                ->press( "OK")
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "MAC Address Management" )
+                ->waitForText( "The MAC address has been added successfully." );
+
+
+            // check DB
+            /** @var VlanInterfaceEntity $vli */
+            $this->assertInstanceOf(VlanInterfaceEntity::class, $vli = D2EM::getRepository(VlanInterfaceEntity::class)->find( 2 ) );
+
+            $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
+
+            /** @var Layer2AddressEntity $l2a */
+            $this->assertInstanceOf(Layer2AddressEntity::class, $l2a = D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e1" ] ) );
+
+            $this->assertEquals("2", $l2a->getVlanInterface()->getId() );
+            $this->assertEquals("e48d8c3521e1", $l2a->getMac() );
+
+            // check that the delete button is not visible
+            $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
+
+            // add a second mac address
+            $browser->click( "#add-l2a" )
+                ->waitForText( "Enter a MAC Address." )
+                ->type( ".bootbox-input-text" , "e48d8c3521e2")
+                ->press( "OK")
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "MAC Address Management" )
+                ->waitForText( "The MAC address has been added successfully." );
+
+            D2EM::refresh( $vli );
+
+            $this->assertEquals( 2, count( $vli->getLayer2Addresses() ) );
+
+            /** @var Layer2AddressEntity $l2a2 */
+            $this->assertInstanceOf(Layer2AddressEntity::class, $l2a2 = D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e2" ] ) );
+
+            $this->assertEquals("2", $l2a2->getVlanInterface()->getId() );
+            $this->assertEquals("e48d8c3521e2", $l2a2->getMac() );
+
+            // check that the add button disapear and the delete buttons are available
+            $browser->assertVisible( "#delete-l2a-" . $l2a->getId() );
+            $browser->assertVisible( "#delete-l2a-" . $l2a2->getId());
+            $browser->assertMissing( "#add-l2a");
+
+            // delete the second mac address
+            $browser->click( "#delete-l2a-" . $l2a2->getId() )
+                ->waitForText( 'Do you really want to delete this MAC Address?' )
+                ->press('Delete')
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "MAC Address Management" )
+                ->waitForText( "The MAC address has been deleted." )
+                ->waitUntilMissing( "#delete-l2a-" . $l2a2->getId() );
+
+            // check DB
+            D2EM::refresh( $vli );
+
+            $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
+
+            $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e2" ] ) );
+
+            // check that the add button disapear and the delete buttons are available
+            $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
+            $browser->assertVisible( "#add-l2a");
 
         });
 
 
     }
 
-    /**
-     * Test the Virtual interface add/edit/delete functions
-     *
-     * @param Browser $browser
-     *
-     * @return VirtualInterfaceEntity $vi
-     *
-     * @throws
-     */
-    private function intTestVi( Browser $browser )
-    {
-
-        $browser->visit('/interfaces/virtual/wizard-add/custid/5')
-            ->assertSee('Virtual Interface Settings');
-
-
-        // Add a new Vitural interface Via wizard form
-        $browser->select('vlan', '2')
-            ->check('ipv4-enabled')
-            ->waitFor("#ipv4-area")
-            ->check('ipv6-enabled')
-            ->waitFor("#ipv6-area")
-            ->select('switch', '2')
-            ->waitUntilMissing("Choose a switch port")
-            ->waitForText("Choose a switch port")
-            ->select('switch-port', '28')
-            ->select('status', '4')
-            ->select('speed', '1000')
-            ->select('duplex', 'full')
-            ->type('maxbgpprefix', '100')
-            ->check('rsclient')
-            ->check('irrdbfilter')
-            ->check('as112client')
-            ->select('ipv4-address', "10.2.0.22")
-            ->select('ipv6-address', '2001:db8:2::22')
-            ->type('ipv4-hostname', 'v4.example.com')
-            ->type('ipv6-hostname', 'v6.example.com')
-            ->type('ipv4-bgp-md5-secret', 'soopersecret')
-            ->type('ipv6-bgp-md5-secret', 'soopersecret')
-            ->check('ipv4-can-ping')
-            ->check('ipv6-can-ping')
-            ->check('ipv4-monitor-rcbgp')
-            ->check('ipv6-monitor-rcbgp')
-            ->press('Save Changes')
-            ->assertSee('New interface created!');
-
-        $url = explode('/', $browser->driver->getCurrentURL());
-
-        // Check data in DB
-        /** @var $vi VirtualInterfaceEntity */
-        $this->assertInstanceOf(VirtualInterfaceEntity::class, $vi = D2EM::getRepository(VirtualInterfaceEntity::class)->find(array_pop($url)));
-
-        // check the values of the Virtual interface object
-        $this->assertEquals(5, $vi->getCustomer()->getId());
-        $this->assertEquals("", $vi->getName());
-        $this->assertEquals(null, $vi->getMtu());
-        $this->assertEquals(false, $vi->getTrunk());
-        $this->assertEquals(null, $vi->getChannelgroup());
-        $this->assertEquals(false, $vi->getLagFraming());
-        $this->assertEquals(false, $vi->getFastLACP());
-
-        // check that we have 1 physical interface for the virtual interface
-        $this->assertEquals(1, count($vi->getVlanInterfaces()));
-
-        // check the values of the Vlan interface object
-        $vli = $vi->getVlanInterfaces()[0];
-        /** @var $vli VlanInterfaceEntity */
-        $this->assertEquals("10.2.0.22", $vli->getIPv4Address()->getAddress());
-        $this->assertEquals("2001:db8:2::22", $vli->getIPv6Address()->getAddress());
-        $this->assertEquals(2, $vli->getVlan()->getId());
-        $this->assertEquals(true, $vli->getIpv4enabled());
-        $this->assertEquals(true, $vli->getIpv6enabled());
-        $this->assertEquals("v4.example.com", $vli->getIpv4hostname());
-        $this->assertEquals("v6.example.com", $vli->getIpv6hostname());
-        $this->assertEquals(false, $vli->getMcastenabled());
-        $this->assertEquals(true, $vli->getIrrdbfilter());
-        $this->assertEquals("soopersecret", $vli->getIpv4bgpmd5secret());
-        $this->assertEquals("soopersecret", $vli->getIpv6bgpmd5secret());
-        $this->assertEquals("100", $vli->getMaxbgpprefix());
-        $this->assertEquals(true, $vli->getRsclient());
-        $this->assertEquals(true, $vli->getIpv4canping());
-        $this->assertEquals(true, $vli->getIpv6canping());
-        $this->assertEquals(true, $vli->getIpv4monitorrcbgp());
-        $this->assertEquals(true, $vli->getIpv6monitorrcbgp());
-        $this->assertEquals(true, $vli->getAs112client());
-        $this->assertEquals(false, $vli->getBusyhost());
-        $this->assertEquals(null, $vli->getNotes());
-        $this->assertEquals(false, $vli->getRsMoreSpecifics());
-
-
-        // check that we have 1 physical interface for the virtual interface
-        $this->assertEquals(1, count($vi->getPhysicalInterfaces()));
-
-        /** @var $pi PhysicalInterfaceEntity */
-        $pi = $vi->getPhysicalInterfaces()[0];
-
-        // check the values of the Physical interface object
-        $this->assertEquals("GigabitEthernet4", $pi->getSwitchPort()->getName());
-        $this->assertEquals("switch2", $pi->getSwitchPort()->getSwitcher()->getName());
-        $this->assertEquals(4, $pi->getStatus());
-        $this->assertEquals(1000, $pi->getSpeed());
-        $this->assertEquals("full", $pi->getDuplex());
-        $this->assertEquals(null, $pi->getNotes());
-        $this->assertEquals(true, $pi->getAutoneg());
-
-
-        // Go on edit page
-        $browser->visit('/interfaces/virtual/edit/' . $vi->getId())
-            ->assertSee('Add/Edit Virtual Interface');
-
-        // Check the form values
-        $browser->assertSelected('cust', '5')
-            ->assertNotChecked('trunk')
-            ->assertNotChecked('lag_framing')
-            ->assertNotChecked('fastlacp')
-            ->click("#advanced-options")
-            ->assertInputValue('name', '')
-            ->assertInputValue('description', '')
-            ->assertInputValue('channel-group', '')
-            ->assertInputValue('mtu', '');
-
-        // Edit the virtual Interface with new values
-        $browser->select('cust', '2')
-            ->check('trunk')
-            ->check('lag_framing')
-            ->waitFor("#fastlacp")
-            ->check('fastlacp')
-            ->type('name', 'name-test')
-            ->type('description', 'description-test')
-            ->type('channel-group', '666')
-            ->type('mtu', '666')
-            ->press('Save Changes')
-            ->assertPathIs('/interfaces/virtual/edit/' . $vi->getId())
-            ->assertSee('Virtual Interface added/updated successfully.');
-
-        // Check value in DB
-        D2EM::refresh($vi);
-
-        $this->assertEquals(2, $vi->getCustomer()->getId());
-        $this->assertEquals("name-test", $vi->getName());
-        $this->assertEquals(666, $vi->getMtu());
-        $this->assertEquals(true, $vi->getTrunk());
-        $this->assertEquals(666, $vi->getChannelgroup());
-        $this->assertEquals(true, $vi->getLagFraming());
-        $this->assertEquals(true, $vi->getFastLACP());
-
-        // Go on edit page
-        $browser->visit('/interfaces/virtual/edit/' . $vi->getId())
-            ->assertSee('Add/Edit Virtual Interface');
-
-
-        // Check the form with new values
-        $browser->assertSelected('cust', '2')
-            ->assertChecked('trunk')
-            ->assertChecked('lag_framing')
-            ->assertChecked('fastlacp')
-            ->assertInputValue('name', 'name-test')
-            ->assertInputValue('description', 'description-test')
-            ->assertInputValue('channel-group', '666')
-            ->assertInputValue('mtu', '666');
-
-
-        // Edit the virtual Interface, uncheck all checkboxes, change value of select
-        $browser->select('cust', '3')
-            ->uncheck('trunk')
-            ->uncheck('lag_framing')
-            ->uncheck('fastlacp')
-            ->press('Save Changes')
-            ->assertPathIs('/interfaces/virtual/edit/' . $vi->getId())
-            ->assertSee('Virtual Interface added/updated successfully.');
-
-        // Check value in DB
-        D2EM::refresh($vi);
-
-        $this->assertEquals(3, $vi->getCustomer()->getId());
-        $this->assertEquals(false, $vi->getTrunk());
-        $this->assertEquals(false, $vi->getLagFraming());
-        $this->assertEquals(false, $vi->getFastLACP());
-
-        // Go on edit page
-        $browser->visit('/interfaces/virtual/edit/' . $vi->getId())
-            ->assertSee('Add/Edit Virtual Interface');
-
-        // Check the form with new values
-        $browser->assertSelected('cust', '3')
-            ->assertNotChecked('trunk')
-            ->assertNotChecked('lag_framing')
-            ->assertNotChecked('fastlacp');
-
-
-        // Edit the virtual Interface, check all checkboxes
-        $browser->check('trunk')
-            ->check('lag_framing')
-            ->waitFor("#fastlacp")
-            ->check('fastlacp')
-            ->press('Save Changes')
-            ->assertPathIs('/interfaces/virtual/edit/' . $vi->getId())
-            ->assertSee('Virtual Interface added/updated successfully.');
-
-        // Check value in DB
-        D2EM::refresh($vi);
-
-        $this->assertEquals(true, $vi->getTrunk());
-        $this->assertEquals(true, $vi->getLagFraming());
-        $this->assertEquals(true, $vi->getFastLACP());
-
-        // Go on edit page
-        $browser->visit('/interfaces/virtual/edit/' . $vi->getId())
-            ->assertSee('Add/Edit Virtual Interface');
-
-        // Check the form with new values
-        $browser->assertChecked('trunk')
-            ->assertChecked('lag_framing')
-            ->assertChecked('fastlacp');
-
-        return $vi;
-    }
 }

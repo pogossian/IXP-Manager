@@ -52,7 +52,7 @@
                             </a>
                             <a class="btn btn-default"
                                 <?php if( $u->getDisabled() ): ?> disabled="disabled" onclick="return( false );"<?php endif; ?>
-                               href="<?= url( "auth/switch-user/id/".$u->getId() ) ?>" rel="tooltip" title="Log in as this user...">
+                               href="<?= url( "auth/switch-user/id/".$u->getId() ) ?>" id="btn-login-as-<?= $u->getId() ?>" rel="tooltip" title="Log in as this user...">
                                 <i class="glyphicon glyphicon-user"></i>
                             </a>
                         </div>
