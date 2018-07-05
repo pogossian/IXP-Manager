@@ -175,7 +175,7 @@ class Layer2AddressControllerTest extends DuskTestCase
 
             // visit layer2address list
             $browser->visit('/layer2-address/vlan-interface/2')
-                ->waitForText( "MAC Address Management" );
+                ->assertSee( "MAC Address Management" );
 
             // add a mac address
             $browser->click( "#add-l2a" )
@@ -248,6 +248,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
             $browser->assertVisible( "#add-l2a");
 
+            $browser->quit();
         });
 
 
