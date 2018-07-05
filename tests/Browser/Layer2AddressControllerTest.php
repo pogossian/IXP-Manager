@@ -163,11 +163,12 @@ class Layer2AddressControllerTest extends DuskTestCase
             // login as a USER (hecustuser)
             $browser->click( "#btn-login-as-4" )
                 ->assertSee( "You are now logged in as hecustuser of HEAnet." )
-                ->click( "#tab-ports" );
+                ->click( "#tab-ports" )
+            ->waitForText( "Connection 1" );
 
             // click on edit layer2address for the vlan interface
             $browser->click('#edit-l2a')
-            ->assertSee( "MAC Address Management" );
+                ->assertSee( "MAC Address Management" );
 
             // check that the delete button is not visible
             $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
