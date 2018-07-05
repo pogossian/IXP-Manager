@@ -23,9 +23,7 @@ class Layer2AddressControllerTest extends DuskTestCase
      */
     public function testAddL2a()
     {
-
-        shell_exec('bzcat data/travis-ci/travis_ci_test_db.sql.bz2| mysql -u root ixp_ci');
-
+        
         $this->browse( function ( Browser $browser ) {
 
             $browser->resize(1600, 1200)
@@ -144,7 +142,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             foreach( $vli->getLayer2Addresses() as $l2a ){
 
                 $l2aMac = $l2a->getMac();
-                $browser->pause(2000);
+
                 // delete mac addresses
                 $browser->press('#delete-l2a-' . $l2a->getId() )
                     ->waitForText( 'Do you really want to delete this MAC Address?' )
