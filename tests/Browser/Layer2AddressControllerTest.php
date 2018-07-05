@@ -144,7 +144,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             foreach( $vli->getLayer2Addresses() as $l2a ){
 
                 $l2aMac = $l2a->getMac();
-
+                $browser->pause(2000);
                 // delete mac addresses
                 $browser->press('#delete-l2a-' . $l2a->getId() )
                     ->waitForText( 'Do you really want to delete this MAC Address?' )
