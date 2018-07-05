@@ -164,7 +164,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             $browser->click( "#btn-login-as-4" )
                 ->assertSee( "You are now logged in as hecustuser of HEAnet." )
                 ->click( "#tab-ports" )
-                ->waitFor( "#tab3" )
+                ->pause( 2000 )
             ->assertSee( "Connection 1" )
             ->pause( 1000 );
 
