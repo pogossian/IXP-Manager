@@ -64,7 +64,7 @@
                             </td>
 
                             <td>
-                                <a href="<?= route( "layer2-address@forVlanInterface" , [ 'id' => $vli->getId() ] )?> " >
+                                <a id="btn-l2a-list" href="<?= route( "layer2-address@forVlanInterface" , [ 'id' => $vli->getId() ] )?> " >
                                     <?php if ( !count( $vli->getLayer2Addresses() ) ) : ?>
                                         <span class="label btn-warning">(none)</span>
                                     <?php elseif ( count( $vli->getLayer2Addresses() ) > 1 ) : ?>

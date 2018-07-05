@@ -23,7 +23,7 @@ class Layer2AddressControllerTest extends DuskTestCase
      */
     public function testAddL2a()
     {
-        
+
         $this->browse( function ( Browser $browser ) {
 
             $browser->resize(1600, 1200)
@@ -34,18 +34,18 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->assertPathIs('/admin');
 
             // check that the vlan interface has no layer2address
-            $browser->visit('/interfaces/virtual/edit/5')
+            $browser->visit('/interfaces/virtual/edit/1')
                 ->assertSee( "(none)" );
 
             // check DB
             /** @var VlanInterfaceEntity $vli */
-            $this->assertInstanceOf(VlanInterfaceEntity::class, $vli = D2EM::getRepository(VlanInterfaceEntity::class)->find( 5 ) );
+            $this->assertInstanceOf(VlanInterfaceEntity::class, $vli = D2EM::getRepository(VlanInterfaceEntity::class)->find( 1 ) );
 
             // check that we have 0 layer2address for the vlan interface
             $this->assertEquals( 0, count( $vli->getLayer2Addresses() ) );
 
             // add mac address with wrong value
-            $browser->visit('/layer2-address/vlan-interface/5')
+            $browser->click( "#btn-l2a-list" )
                 ->assertSee('Configured MAC Address Management')
                 ->click( "#add-l2a" )
                 ->waitForText( "Enter a MAC Address." )
@@ -74,7 +74,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             /** @var Layer2AddressEntity $l2a */
             $l2a = $vli->getLayer2Addresses()->first();
 
-            $this->assertEquals("5", $l2a->getVlanInterface()->getId() );
+            $this->assertEquals(1, $l2a->getVlanInterface()->getId() );
             $this->assertEquals("e48d8c3521e5", $l2a->getMac() );
 
 
@@ -88,12 +88,12 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->assertSee( "The MAC address already exists within this" );
 
             // check that the vlan interface has the new layer2address
-            $browser->visit('/interfaces/virtual/edit/5')
+            $browser->visit('/interfaces/virtual/edit/1')
                 ->assertSee( "e4:8d:8c:35:21:e5" );
 
 
             // go the the layer2address list
-            $browser->visit('/layer2-address/vlan-interface/5')
+            $browser->visit('/layer2-address/vlan-interface/1')
                 ->assertSee('Configured MAC Address Management');
 
 
@@ -126,38 +126,33 @@ class Layer2AddressControllerTest extends DuskTestCase
             /** @var Layer2AddressEntity $l2a */
             $l2a = $vli->getLayer2Addresses()->last();
 
-            $this->assertEquals("5", $l2a->getVlanInterface()->getId() );
+            $this->assertEquals(1, $l2a->getVlanInterface()->getId() );
             $this->assertEquals("e48d8c3521e4", $l2a->getMac() );
 
             // check that the vlan interface has the new layer2address
-            $browser->visit('/interfaces/virtual/edit/5')
+            $browser->visit('/interfaces/virtual/edit/1')
                 ->assertSee( "(multiple)" );
 
 
             // go the the layer2address list
-            $browser->visit('/layer2-address/vlan-interface/5')
+            $browser->visit('/layer2-address/vlan-interface/1')
                 ->assertSee('Configured MAC Address Management');
 
 
-            foreach( $vli->getLayer2Addresses() as $l2a ){
-
-                $l2aMac = $l2a->getMac();
-
-                // delete mac addresses
-                $browser->press('#delete-l2a-' . $l2a->getId() )
-                    ->waitForText( 'Do you really want to delete this MAC Address?' )
-                    ->press('Delete')
-                    ->waitUntilMissing( ".bootbox-prompt" )
-                    ->waitForText( "Configured MAC Address Management" );
-
-                $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => $l2aMac ] ) );
-
-            }
+            // delete mac addresses
+            $browser->press('#delete-l2a-' . $l2a->getId() )
+                ->waitForText( 'Do you really want to delete this MAC Address?' )
+                ->press('Delete')
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "Configured MAC Address Management" );
 
             D2EM::refresh($vli);
 
+            $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e4" ] ) );
+
+
             // check that we have 0 layer2address for the vlan interface
-            $this->assertEquals( 0, count( $vli->getLayer2Addresses() ) );
+            $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
 
             // check to add mac address as a USER (customer HEAnet)
             $browser->visit('/customer/overview/2/users')
@@ -165,15 +160,17 @@ class Layer2AddressControllerTest extends DuskTestCase
 
 
 
-
-
             // login as a USER (hecustuser)
             $browser->click( "#btn-login-as-4" )
-                ->assertSee( "You are now logged in as hecustuser of HEAnet." );
+                ->assertSee( "You are now logged in as hecustuser of HEAnet." )
+                ->click( "#tab-ports" );
 
-            // visit layer2address list
-            $browser->visit('/layer2-address/vlan-interface/2')
-                ->assertSee( "MAC Address" );
+            // click on edit layer2address for the vlan interface
+            $browser->click('#edit-l2a')
+            ->assertSee( "MAC Address Management" );
+
+            // check that the delete button is not visible
+            $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
 
             // add a mac address
             $browser->click( "#add-l2a" )
@@ -186,43 +183,22 @@ class Layer2AddressControllerTest extends DuskTestCase
 
 
             // check DB
-            /** @var VlanInterfaceEntity $vli */
-            $this->assertInstanceOf(VlanInterfaceEntity::class, $vli = D2EM::getRepository(VlanInterfaceEntity::class)->find( 2 ) );
-
-            $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
-
-            /** @var Layer2AddressEntity $l2a */
-            $this->assertInstanceOf(Layer2AddressEntity::class, $l2a = D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e1" ] ) );
-
-            $this->assertEquals("2", $l2a->getVlanInterface()->getId() );
-            $this->assertEquals("e48d8c3521e1", $l2a->getMac() );
-
-            // check that the delete button is not visible
-            $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
-
-            // add a second mac address
-            $browser->click( "#add-l2a" )
-                ->waitForText( "Enter a MAC Address." )
-                ->type( ".bootbox-input-text" , "e48d8c3521e2")
-                ->press( "OK")
-                ->waitUntilMissing( ".bootbox-prompt" )
-                ->waitForText( "MAC Address Management" )
-                ->waitForText( "The MAC address has been added successfully." );
-
             D2EM::refresh( $vli );
 
             $this->assertEquals( 2, count( $vli->getLayer2Addresses() ) );
 
-            /** @var Layer2AddressEntity $l2a2 */
-            $this->assertInstanceOf(Layer2AddressEntity::class, $l2a2 = D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e2" ] ) );
+            /** @var Layer2AddressEntity $l2a */
+            $this->assertInstanceOf(Layer2AddressEntity::class, $l2a2 = D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e1" ] ) );
+            $this->assertInstanceOf(Layer2AddressEntity::class, $l2a1 = D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e5" ] ) );
 
-            $this->assertEquals("2", $l2a2->getVlanInterface()->getId() );
-            $this->assertEquals("e48d8c3521e2", $l2a2->getMac() );
+            $this->assertEquals(1, $l2a2->getVlanInterface()->getId() );
+            $this->assertEquals("e48d8c3521e1", $l2a2->getMac() );
 
-            $browser->waitFor( "#delete-l2a-" . $l2a->getId() );
+
+            $browser->waitFor( "#delete-l2a-" . $l2a2->getId() );
 
             // check that the add button disapear and the delete buttons are available
-            $browser->assertVisible( "#delete-l2a-" . $l2a->getId() );
+            $browser->assertVisible( "#delete-l2a-" . $l2a1->getId() );
             $browser->assertVisible( "#delete-l2a-" . $l2a2->getId());
             $browser->assertMissing( "#add-l2a");
 
@@ -240,7 +216,7 @@ class Layer2AddressControllerTest extends DuskTestCase
 
             $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
 
-            $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e2" ] ) );
+            $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e1" ] ) );
 
             // check that the add button disapear and the delete buttons are available
             $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
