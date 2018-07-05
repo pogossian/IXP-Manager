@@ -165,7 +165,6 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->assertSee( "You are now logged in as hecustuser of HEAnet." )
                 ->click( "#tab-ports" )
                 ->pause( 2000 )
-            ->assertSee( "Connection 1" )
             ->pause( 1000 );
 
             // click on edit layer2address for the vlan interface
@@ -240,6 +239,8 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->waitUntilMissing( ".bootbox-prompt" )
                 ->waitForText( "Configured MAC Address Management" );
         });
+
+        session()->flush();
 
 
     }
