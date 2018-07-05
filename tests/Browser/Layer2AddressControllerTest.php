@@ -164,7 +164,9 @@ class Layer2AddressControllerTest extends DuskTestCase
             $browser->click( "#btn-login-as-4" )
                 ->assertSee( "You are now logged in as hecustuser of HEAnet." )
                 ->click( "#tab-ports" )
-            ->waitForText( "Connection 1" );
+                ->waitFor( "#tab3" )
+            ->assertSee( "Connection 1" )
+            ->pause( 1000 );
 
             // click on edit layer2address for the vlan interface
             $browser->click('#edit-l2a')
@@ -220,10 +222,23 @@ class Layer2AddressControllerTest extends DuskTestCase
             $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e1" ] ) );
 
             // check that the add button disapear and the delete buttons are available
-            $browser->assertMissing( "#delete-l2a-" . $l2a->getId() );
+            $browser->assertMissing( "#delete-l2a-" . $l2a1->getId() );
             $browser->assertVisible( "#add-l2a");
 
-            $browser->quit();
+            $browser->press( "#btn-switch-back" );
+
+            // go to vlan interface
+            $browser->visit('/interfaces/virtual/edit/1')
+                ->assertSee( "e4:8d:8c:35:21:e5" )
+            ->click( "#btn-l2a-list" )
+                ->assertSee('Configured MAC Address Management');
+
+            // delete mac addresses
+            $browser->press('#delete-l2a-' . $l2a1->getId() )
+                ->waitForText( 'Do you really want to delete this MAC Address?' )
+                ->press('Delete')
+                ->waitUntilMissing( ".bootbox-prompt" )
+                ->waitForText( "Configured MAC Address Management" );
         });
 
 
