@@ -24,6 +24,7 @@ class VirtualInterfaceControllerTest extends DuskTestCase
      */
     public function testAddWizard()
     {
+        sleep(1);
         $this->browse( function ( Browser $browser ) {
 
             $browser->resize(1600, 1200 )
@@ -32,6 +33,8 @@ class VirtualInterfaceControllerTest extends DuskTestCase
                 ->type('password', 'travisci' )
                 ->press('submit' )
                 ->assertPathIs('/admin' );
+
+
 
             $vi = $this->intTestVi( $browser );
 
@@ -48,9 +51,7 @@ class VirtualInterfaceControllerTest extends DuskTestCase
                 ->assertSee('The Virtual Interface has been deleted successfully.' );
 
         });
-
-        sleep(1);
-
+        
 
     }
 

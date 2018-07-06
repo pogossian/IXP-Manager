@@ -23,7 +23,7 @@ class Layer2AddressControllerTest extends DuskTestCase
      */
     public function testAddL2a()
     {
-
+        sleep(1);
         $this->browse( function ( Browser $browser ) {
 
             $browser->resize(1600, 1200)
@@ -76,6 +76,8 @@ class Layer2AddressControllerTest extends DuskTestCase
 
             $this->assertEquals(1, $l2a->getVlanInterface()->getId() );
             $this->assertEquals("e48d8c3521e5", $l2a->getMac() );
+
+
 
             // add same mac address as above
             $browser->click( "#add-l2a" )
@@ -163,12 +165,11 @@ class Layer2AddressControllerTest extends DuskTestCase
             $browser->click( "#btn-login-as-4" )
                 ->assertSee( "You are now logged in as hecustuser of HEAnet." )
                 ->click( "#tab-ports" )
-                ->pause(2000)
-            ->assertSee( "e4:8d:8c:35:21:e4" );
+                ->pause( 2000 )
+            ->pause( 1000 );
 
             // click on edit layer2address for the vlan interface
-            //$browser->click('#edit-l2a')
-            $browser->visit( "/layer2-address/vlan-interface/1" )
+            $browser->click('#edit-l2a')
                 ->assertSee( "MAC Address Management" );
 
             // check that the delete button is not visible
@@ -239,9 +240,6 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->waitUntilMissing( ".bootbox-prompt" )
                 ->waitForText( "Configured MAC Address Management" );
         });
-
-        sleep(1);
-
 
     }
 

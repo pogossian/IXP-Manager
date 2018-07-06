@@ -21,7 +21,7 @@ class RouterControllerTest extends DuskTestCase
      */
     public function testAdd()
     {
-
+        sleep(1);
         $this->browse(function (Browser $browser) {
             $browser->resize( 1600,1200 )
                     ->visit('/auth/login')
@@ -224,8 +224,6 @@ class RouterControllerTest extends DuskTestCase
             // 12. do a D2EM findOneBy and verify false/null
             $this->assertEquals( null, D2EM::getRepository( RouterEntity::class )->findOneBy( [ 'handle' => 'dusk-ci-test' ] ) );
         });
-
-        sleep(1);
 
     }
 }
