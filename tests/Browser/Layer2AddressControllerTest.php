@@ -53,6 +53,7 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->press( "OK")
                 ->waitUntilMissing( ".bootbox-prompt" )
                 ->waitForText( "Configured MAC Address Management" )
+                ->pause(1000)
                 ->assertSee( "Invalid or missing MAC addresses" );
 
             // add mac address
@@ -86,6 +87,7 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->press( "OK")
                 ->waitUntilMissing( ".bootbox-prompt" )
                 ->waitForText( "Configured MAC Address Management" )
+                ->pause(1000)
                 ->assertSee( "The MAC address already exists within this" );
 
             // check that the vlan interface has the new layer2address
@@ -164,12 +166,12 @@ class Layer2AddressControllerTest extends DuskTestCase
             // login as a USER (hecustuser)
             $browser->click( "#btn-login-as-4" )
                 ->assertSee( "You are now logged in as hecustuser of HEAnet." )
-                ->click( "#tab-ports" )
-                ->pause( 2000 )
-            ->pause( 1000 );
+                ->click( "#tab-ports" );
 
             // click on edit layer2address for the vlan interface
-            $browser->click('#edit-l2a')
+            //$browser->click('#edit-l2a')
+            $browser->visit('/layer2-address/vlan-interface/1')
+                ->pause(1000)
                 ->assertSee( "MAC Address Management" );
 
             // check that the delete button is not visible

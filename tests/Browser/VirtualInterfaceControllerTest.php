@@ -51,7 +51,7 @@ class VirtualInterfaceControllerTest extends DuskTestCase
                 ->assertSee('The Virtual Interface has been deleted successfully.' );
 
         });
-        
+
 
     }
 
