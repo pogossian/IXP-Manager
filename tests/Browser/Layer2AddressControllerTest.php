@@ -8,8 +8,11 @@ use Tests\DuskTestCase;
 use Laravel\Dusk\Browser;
 
 use Entities\{
-    VlanInterface       as VlanInterfaceEntity,
-    Layer2Address       as Layer2AddressEntity
+    Layer2Address       as Layer2AddressEntity,
+    Customer            as CustomerEntity,
+    User                as UserEntity,
+    VlanInterface       as VlanInterfaceEntity
+
 };
 
 class Layer2AddressControllerTest extends DuskTestCase
@@ -96,7 +99,7 @@ class Layer2AddressControllerTest extends DuskTestCase
 
 
             // go the the layer2address list
-            $browser->visit('/layer2-address/vlan-interface/1')
+            $browser->visit('/layer2-address/vlan-interface/' . $vli->getId() )
                 ->assertSee('Configured MAC Address Management');
 
 
@@ -133,12 +136,12 @@ class Layer2AddressControllerTest extends DuskTestCase
             $this->assertEquals("e48d8c3521e4", $l2a->getMac() );
 
             // check that the vlan interface has the new layer2address
-            $browser->visit('/interfaces/virtual/edit/1')
+            $browser->visit('/interfaces/virtual/edit/' . $vli->getId() )
                 ->assertSee( "(multiple)" );
 
 
             // go the the layer2address list
-            $browser->visit('/layer2-address/vlan-interface/1')
+            $browser->visit('/layer2-address/vlan-interface/' . $vli->getId() )
                 ->assertSee('Configured MAC Address Management');
 
 
@@ -157,20 +160,34 @@ class Layer2AddressControllerTest extends DuskTestCase
             // check that we have 0 layer2address for the vlan interface
             $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
 
+            /** @var $cust CustomerEntity */
+            $this->assertInstanceOf(CustomerEntity::class  , $cust = D2EM::getRepository(CustomerEntity::class)->find( 2 ) );
+
             // check to add mac address as a USER (customer HEAnet)
-            $browser->visit('/customer/overview/2/users')
+            $browser->visit('/customer/overview/' . $cust->getId() . '/users')
                 ->assertSee( "HEAnet" );
 
+            $user = null;
+
+            foreach( $cust->getUsers() as $u ){
+                if( $u->getPrivs() === UserEntity::AUTH_CUSTUSER ){
+                    $user = $u;
+                    break;
+                }
+            }
 
 
             // login as a USER (hecustuser)
-            $browser->click( "#btn-login-as-4" )
-                ->assertSee( "You are now logged in as hecustuser of HEAnet." )
+            $browser->click( "#btn-login-as-" . $user->getId() )
+                ->assertSee( "You are now logged in as " .$user->getUsername(). " of HEAnet." )
                 ->click( "#tab-ports" );
+
+            $this->assertEquals( $vli->getVirtualInterface()->getCustomer()->getId(), $cust->getId() );
 
             // click on edit layer2address for the vlan interface
             //$browser->click('#edit-l2a')
-            $browser->visit('/layer2-address/vlan-interface/1')
+            $browser->visit('/layer2-address/vlan-interface/' . $vli->getId() )
+                ->assertPathIs('/layer2-address/vlan-interface/' . $vli->getId() )
                 ->pause(1000)
                 ->assertSee( "MAC Address Management" );
 
