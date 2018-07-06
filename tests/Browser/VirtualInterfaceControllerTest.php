@@ -49,7 +49,7 @@ class VirtualInterfaceControllerTest extends DuskTestCase
 
         });
 
-        session()->flush();
+        sleep(1);
 
 
     }

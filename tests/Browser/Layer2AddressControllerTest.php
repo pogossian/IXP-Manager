@@ -77,7 +77,6 @@ class Layer2AddressControllerTest extends DuskTestCase
             $this->assertEquals(1, $l2a->getVlanInterface()->getId() );
             $this->assertEquals("e48d8c3521e5", $l2a->getMac() );
 
-
             // add same mac address as above
             $browser->click( "#add-l2a" )
                 ->waitForText( "Enter a MAC Address." )
@@ -240,7 +239,7 @@ class Layer2AddressControllerTest extends DuskTestCase
                 ->waitForText( "Configured MAC Address Management" );
         });
 
-        session()->flush();
+        sleep(1);
 
 
     }

@@ -225,7 +225,7 @@ class RouterControllerTest extends DuskTestCase
             $this->assertEquals( null, D2EM::getRepository( RouterEntity::class )->findOneBy( [ 'handle' => 'dusk-ci-test' ] ) );
         });
 
-        session()->flush();
+        sleep(1);
 
     }
 }
