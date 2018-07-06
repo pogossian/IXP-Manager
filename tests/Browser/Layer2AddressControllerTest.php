@@ -163,11 +163,12 @@ class Layer2AddressControllerTest extends DuskTestCase
             $browser->click( "#btn-login-as-4" )
                 ->assertSee( "You are now logged in as hecustuser of HEAnet." )
                 ->click( "#tab-ports" )
-                ->pause( 2000 )
-            ->pause( 1000 );
+                ->pause(2000)
+            ->assertSee( "e4:8d:8c:35:21:e4" );
 
             // click on edit layer2address for the vlan interface
-            $browser->click('#edit-l2a')
+            //$browser->click('#edit-l2a')
+            $browser->visit( "/layer2-address/vlan-interface/1" )
                 ->assertSee( "MAC Address Management" );
 
             // check that the delete button is not visible
