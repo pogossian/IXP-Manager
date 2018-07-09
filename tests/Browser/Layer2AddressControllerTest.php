@@ -81,8 +81,6 @@ class Layer2AddressControllerTest extends DuskTestCase
             $this->assertEquals(1, $l2a->getVlanInterface()->getId() );
             $this->assertEquals("e48d8c3521e5", $l2a->getMac() );
 
-
-
             // add same mac address as above
             $browser->click( "#add-l2a" )
                 ->waitForText( "Enter a MAC Address." )
@@ -141,9 +139,8 @@ class Layer2AddressControllerTest extends DuskTestCase
 
 
             // go the the layer2address list
-            $browser->visit('/layer2-address/vlan-interface/' . $vli->getId() )
+            $browser->click( "#btn-l2a-list" )
                 ->assertSee('Configured MAC Address Management');
-
 
             // delete mac addresses
             $browser->press('#delete-l2a-' . $l2a->getId() )
@@ -156,7 +153,6 @@ class Layer2AddressControllerTest extends DuskTestCase
 
             $this->assertEquals(null , D2EM::getRepository(Layer2AddressEntity::class)->findOneBy( [ "mac" => "e48d8c3521e4" ] ) );
 
-
             // check that we have 0 layer2address for the vlan interface
             $this->assertEquals( 1, count( $vli->getLayer2Addresses() ) );
 
@@ -167,6 +163,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             $browser->visit('/customer/overview/' . $cust->getId() . '/users')
                 ->assertSee( "HEAnet" );
 
+            // looking for a CUSTUSER for The customer
             $user = null;
 
             foreach( $cust->getUsers() as $u ){
@@ -176,9 +173,10 @@ class Layer2AddressControllerTest extends DuskTestCase
                 }
             }
 
+            // Check the the config file exist
             $this->assertEquals( true, config( 'ixp_fe.layer2-addresses.customer_can_edit' ) );
-            $this->assertEquals( 1, config( 'ixp_fe.layer2-addresses.customer_params.min_addresses' ) );
-            $this->assertEquals( 2, config( 'ixp_fe.layer2-addresses.customer_params.max_addresses' ) );
+            $this->assertNotEquals( null, config( 'ixp_fe.layer2-addresses.customer_params.min_addresses' ) );
+            $this->assertNotEquals( null, config( 'ixp_fe.layer2-addresses.customer_params.max_addresses' ) );
 
             // login as a USER (hecustuser)
             $browser->click( "#btn-login-as-" . $user->getId() )
@@ -188,8 +186,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             $this->assertEquals( $vli->getVirtualInterface()->getCustomer()->getId(), $cust->getId() );
 
             // click on edit layer2address for the vlan interface
-            //$browser->click('#edit-l2a')
-            $browser->visit('/layer2-address/vlan-interface/' . $vli->getId() )
+            $browser->click('#edit-l2a')
                 ->assertPathIs('/layer2-address/vlan-interface/' . $vli->getId() )
                 ->pause(1000)
                 ->assertSee( "MAC Address Management" );
@@ -252,7 +249,7 @@ class Layer2AddressControllerTest extends DuskTestCase
             // go to vlan interface
             $browser->visit('/interfaces/virtual/edit/1')
                 ->assertSee( "e4:8d:8c:35:21:e5" )
-            ->click( "#btn-l2a-list" )
+                ->click( "#btn-l2a-list" )
                 ->assertSee('Configured MAC Address Management');
 
             // delete mac addresses
