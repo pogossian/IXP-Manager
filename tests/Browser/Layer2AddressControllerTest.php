@@ -176,15 +176,9 @@ class Layer2AddressControllerTest extends DuskTestCase
                 }
             }
 
-            config([
-                'ixp_fe.layer2-addresses.customer_can_edit' => true,
-                'ixp_fe.customer_params.min_addresses' => 1,
-                'ixp_fe.customer_params.max_addresses' => 2
-            ]);
-
             $this->assertEquals( true, config( 'ixp_fe.layer2-addresses.customer_can_edit' ) );
-            $this->assertEquals( 1, config( 'ixp_fe.customer_params.min_addresses' ) );
-            $this->assertEquals( 2, config( 'ixp_fe.customer_params.max_addresses' ) );
+            $this->assertEquals( 1, config( 'ixp_fe.layer2-addresses.customer_params.min_addresses' ) );
+            $this->assertEquals( 2, config( 'ixp_fe.layer2-addresses.customer_params.max_addresses' ) );
 
             // login as a USER (hecustuser)
             $browser->click( "#btn-login-as-" . $user->getId() )
