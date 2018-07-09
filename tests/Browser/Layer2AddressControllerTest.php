@@ -186,7 +186,8 @@ class Layer2AddressControllerTest extends DuskTestCase
             $this->assertEquals( $vli->getVirtualInterface()->getCustomer()->getId(), $cust->getId() );
 
             // click on edit layer2address for the vlan interface
-            $browser->click('#edit-l2a')
+            //$browser->click('#edit-l2a')
+            $browser->visit('/layer2-address/vlan-interface/' . $vli->getId() )
                 ->assertPathIs('/layer2-address/vlan-interface/' . $vli->getId() )
                 ->pause(1000)
                 ->assertSee( "MAC Address Management" );
