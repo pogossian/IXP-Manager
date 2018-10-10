@@ -2,8 +2,6 @@
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use IXP\Console\Commands\Audit\PostSpeeds;
-use IXP\Console\Commands\Upgrade\RouterImport;
 
 class Kernel extends ConsoleKernel {
 
@@ -14,7 +12,7 @@ class Kernel extends ConsoleKernel {
      */
     protected $commands = [
 
-        \IXP\Console\Commands\Audit\PostSpeeds::class,
+        \IXP\Console\Commands\Audit\PortSpeeds::class,
 
         \IXP\Console\Commands\Irrdb\UpdateAsnDb::class,
         \IXP\Console\Commands\Irrdb\UpdatePrefixDb::class,
@@ -42,7 +40,7 @@ class Kernel extends ConsoleKernel {
     protected function schedule(Schedule $schedule) {
         // $schedule->command('inspire')
         //          ->hourly();
-    }
+    }git status
 
     /**
      * Register the commands for the application.
