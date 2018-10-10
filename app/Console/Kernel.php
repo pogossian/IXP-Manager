@@ -40,7 +40,7 @@ class Kernel extends ConsoleKernel {
     protected function schedule(Schedule $schedule) {
         // $schedule->command('inspire')
         //          ->hourly();
-    }git status
+    }
 
     /**
      * Register the commands for the application.
