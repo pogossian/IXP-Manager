@@ -4,9 +4,11 @@ MAINTAINER Barry O'Donovan <barry.odonovan@inex.ie>
 
 RUN apt-get -y update && \
     apt-get -y upgrade && \
+    apt-get install -y gnupg && \
+    curl -sL https://deb.nodesource.com/setup_9.x | bash - && \
     apt-get -y install libmcrypt-dev snmp libsnmp-dev libicu-dev librrd-dev \
-        libyaml-dev git mysql-client npm nodejs-legacy joe wget \
-        iputils-ping dnsutils && \
+        libyaml-dev git mysql-client nodejs joe wget \
+        iputils-ping dnsutils libpng-dev && \
     apt-get -y autoremove --purge && \
     rm -rf /tmp/*
 
